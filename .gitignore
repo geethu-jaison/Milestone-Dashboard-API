@@ -1,0 +1,40 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+# Ignore Visual Studio cache files
+.vs/
+.vscode/
+*_ReSharper.*
+*.suo
+*.user
+*.userossc
+*.sln.docstates
+
+# Ignore build and binary files
+bin/
+obj/
+**/bin/
+**/obj/
+**/debug/
+**/release/
+**/.vs/
+**/.vscode/
+
+# Ignore cache and temporary files
+**/FileContentIndex/
+**/DesignTimeBuild/
+**/*.vsix
+**/*.cache/
+**/.vs/
+**/.vscode/
+
+# Ignore NuGet and Package Cache
+packages/
+**/packages/
+*.nupkg
+project.lock.json
+artifacts/
+
+# Ignore specific auto-generated files from NuGet
+**/obj/Debug/net8.0/NuGet/
