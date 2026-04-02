@@ -1,3 +1,5 @@
+using IconnectDashboardGateway.Application.Interfaces.Connection;
+using IconnectDashboardGateway.Infrastructure.Connection;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+
+// Connection string from registry (singleton cache)
+builder.Services.AddSingleton<IRegistryConnectionStringProvider, RegistryConnectionStringProvider>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IconnectDashboardGateway.Application.Interfaces.Repositories
 {
-    internal interface ICameraRepository
+    public interface ICameraRepository
     {
     }
 }
