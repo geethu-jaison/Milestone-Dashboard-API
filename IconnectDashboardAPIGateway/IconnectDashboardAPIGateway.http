@@ -1,6 +1,0 @@
-@IconnectDashboardAPIGateway_HostAddress = http://localhost:5242
-
-GET {{IconnectDashboardAPIGateway_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

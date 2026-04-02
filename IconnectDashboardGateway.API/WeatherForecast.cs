@@ -1,4 +1,4 @@
-namespace IconnectDashboardAPIGateway
+namespace IconnectDashboardGateway.API
 {
     public class WeatherForecast
     {

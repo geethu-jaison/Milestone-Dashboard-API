@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace IconnectDashboardAPIGateway.Controllers
+namespace IconnectDashboardGateway.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
