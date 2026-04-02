@@ -1,0 +1,562 @@
+Site Gateway - Camera Summary Flow (.NET 9)
+=============================================
+
+Goal
+----
+Implement a simple, layered “Camera Summary” endpoint like:
+
+`GET /api/v1/sites/{siteId}/cameras/summary`
+
+Flow:
+`Controller -> Application service (interface) -> Infrastructure repository (Dapper) -> RegistryConnectionStringProvider (K/D decrypt) -> SQL table query`
+
+
+0. Important note about your current stubs
+--------------------------------------------
+You already have these files, but they are empty stubs and most types are `internal`:
+- `IconnectDashboardGateway.API/Controllers/CameraController.cs`
+- `IconnectDashboardGateway.Application/Interfaces/ICameraService.cs`
+- `IconnectDashboardGateway.Application/Services/CameraService.cs`
+- `IconnectDashboardGateway.Contracts/Dtos/CameraDto.cs`
+- `IconnectDashboardGateway.Infrastructure/Connection/RegistryConnectionStringProvider.cs`
+- `IconnectDashboardGateway.Infrastructure/DataAccess/CameraRepository.cs`
+
+For DI + cross-project wiring to work, you must make interfaces/classes used by other projects `public`.
+
+
+1. Folder placement (simple version)
+--------------------------------------
+You can keep the structure you already started, but align naming:
+
+`IconnectDashboardGateway.API`
+- `Controllers/`
+  - (keep) `CameraController.cs`
+
+`IconnectDashboardGateway.Application`
+- `Interfaces/`
+  - `ICameraService.cs`
+- `Interfaces/Repositories/`
+  - `ICameraRepository.cs`            (new)
+- `Services/`
+  - `CameraService.cs`
+
+`IconnectDashboardGateway.Contracts`
+- `Dtos/`
+  - `JsonResponseModel{T}.cs`        (new)
+  - `CameraDto.cs`
+
+`IconnectDashboardGateway.Infrastructure`
+- `Connection/`
+  - `RegistryConnectionStringProvider.cs`
+- `DataAccess/`
+  - `CameraRepository.cs`
+- `DependencyInjection/`
+  - `ServiceCollectionExtensions.cs` (new)
+
+
+2. Add response wrapper model: JsonResponseModel<T>
+-----------------------------------------------------
+Create file: `IconnectDashboardGateway.Contracts/Dtos/JsonResponseModel.cs`
+
+```csharp
+namespace IconnectDashboardGateway.Contracts.Dtos
+{
+    public class JsonResponseModel<T>
+    {
+        public string? Status { get; set; }    // "Success" / "Error"
+        public string? Message { get; set; }
+        public T? Data { get; set; }
+
+        public static JsonResponseModel<T> Success(T data, string? message = null)
+            => new JsonResponseModel<T> { Status = "Success", Message = message, Data = data };
+
+        public static JsonResponseModel<T> Error(string message)
+            => new JsonResponseModel<T> { Status = "Error", Message = message, Data = default };
+    }
+}
+```
+
+Update `IconnectDashboardGateway.Contracts/Dtos/CameraDto.cs` to be public and shaped:
+
+```csharp
+namespace IconnectDashboardGateway.Contracts.Dtos
+{
+    public class CameraDto
+    {
+        public int TotalCameras { get; set; }
+        public int OnlineCameras { get; set; }
+        // Add more fields based on your DB schema:
+        // public int RecordingCameras { get; set; }
+        // public int AlarmCameras { get; set; }
+    }
+}
+```
+
+
+3. Application interfaces (controller depends on service interface only)
+-------------------------------------------------------------------------
+Create file: `IconnectDashboardGateway.Application/Interfaces/Repositories/ICameraRepository.cs`
+
+```csharp
+using IconnectDashboardGateway.Contracts.Dtos;
+
+namespace IconnectDashboardGateway.Application.Interfaces.Repositories
+{
+    public interface ICameraRepository
+    {
+        Task<CameraDto> GetCameraSummaryAsync(string siteId, CancellationToken ct);
+    }
+}
+```
+
+Update `IconnectDashboardGateway.Application/Interfaces/ICameraService.cs`
+
+```csharp
+using IconnectDashboardGateway.Contracts.Dtos;
+
+namespace IconnectDashboardGateway.Application.Interfaces
+{
+    public interface ICameraService
+    {
+        Task<CameraDto> GetCameraSummaryAsync(string siteId, CancellationToken ct);
+    }
+}
+```
+
+
+4. Application service orchestration
+-------------------------------------
+Update `IconnectDashboardGateway.Application/Services/CameraService.cs`
+
+```csharp
+using IconnectDashboardGateway.Application.Interfaces;
+using IconnectDashboardGateway.Application.Interfaces.Repositories;
+using IconnectDashboardGateway.Contracts.Dtos;
+
+namespace IconnectDashboardGateway.Application.Services
+{
+    public class CameraService : ICameraService
+    {
+        private readonly ICameraRepository _cameraRepository;
+
+        public CameraService(ICameraRepository cameraRepository)
+        {
+            _cameraRepository = cameraRepository;
+        }
+
+        public Task<CameraDto> GetCameraSummaryAsync(string siteId, CancellationToken ct)
+        {
+            // Service layer is orchestration only; no registry decrypt, no Dapper here.
+            return _cameraRepository.GetCameraSummaryAsync(siteId, ct);
+        }
+    }
+}
+```
+
+
+5. Registry connection string provider (K/D decrypt)
+------------------------------------------------------
+You want one place that reads encrypted DB connection from registry values:
+- `K` (salted key)
+- `D` (encrypted connection string)
+
+Your existing file: `IconnectDashboardGateway.Infrastructure/Connection/RegistryConnectionStringProvider.cs`
+
+Create an interface (recommended) in Application:
+`IconnectDashboardGateway.Application/Interfaces/IRegistryConnectionStringProvider.cs` (new)
+
+```csharp
+namespace IconnectDashboardGateway.Application.Interfaces
+{
+    public interface IRegistryConnectionStringProvider
+    {
+        string GetConnectionString();
+    }
+}
+```
+
+Then implement in Infrastructure (public):
+`IconnectDashboardGateway.Infrastructure/Connection/RegistryConnectionStringProvider.cs`
+
+```csharp
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Win32;
+using IconnectDashboardGateway.Application.Interfaces;
+
+namespace IconnectDashboardGateway.Infrastructure.Connection
+{
+    public class RegistryConnectionStringProvider : IRegistryConnectionStringProvider
+    {
+        // Update these to match your plugin registry location:
+        private const string RegistryBasePath = @"SOFTWARE\iConnect\Plugin";
+        private const string ValueK = "K";
+        private const string ValueD = "D";
+
+        private string? _cachedConnectionString;
+        private readonly object _lock = new();
+
+        public string GetConnectionString()
+        {
+            lock (_lock)
+            {
+                if (!string.IsNullOrWhiteSpace(_cachedConnectionString))
+                    return _cachedConnectionString;
+
+                using var key = Registry.LocalMachine.OpenSubKey(RegistryBasePath, writable: false);
+                if (key == null)
+                    throw new InvalidOperationException($"Registry key not found: {RegistryBasePath}");
+
+                var k = key.GetValue(ValueK) as string;
+                var d = key.GetValue(ValueD) as string;
+                if (string.IsNullOrWhiteSpace(k) || string.IsNullOrWhiteSpace(d))
+                    throw new InvalidOperationException("Registry values K/D are missing or empty.");
+
+                // IMPORTANT:
+                // Replace this placeholder with the same decrypt logic used by your plugin scripts.
+                // This just shows where K/D decryption would happen.
+                var decrypted = DecryptPlaceholder(k, d);
+
+                _cachedConnectionString = decrypted;
+                return _cachedConnectionString;
+            }
+        }
+
+        private static string DecryptPlaceholder(string k, string d)
+        {
+            // TODO: Use your real algorithm.
+            // For now we do a deterministic placeholder to keep the code compiling.
+            // Do NOT use in production.
+            return $"DECRYPTED_CONNECTION_STRING_FROM_K={k}_D={d}";
+        }
+    }
+}
+```
+
+Where to store/cache the connection string:
+- keep it in the provider as a singleton-scoped cached value
+- do NOT decrypt per request unless required
+
+
+6. Repository using Dapper and SQL table query
+-------------------------------------------------
+Update `IconnectDashboardGateway.Infrastructure/DataAccess/CameraRepository.cs`
+
+You need packages in Infrastructure:
+- `Dapper`
+- `Microsoft.Data.SqlClient`
+
+Example repository:
+
+```csharp
+using System.Data;
+using System.Data.SqlClient;
+using Dapper;
+using IconnectDashboardGateway.Application.Interfaces;
+using IconnectDashboardGateway.Application.Interfaces.Repositories;
+using IconnectDashboardGateway.Contracts.Dtos;
+
+namespace IconnectDashboardGateway.Infrastructure.DataAccess
+{
+    public class CameraRepository : ICameraRepository
+    {
+        private readonly IRegistryConnectionStringProvider _connectionStringProvider;
+
+        public CameraRepository(IRegistryConnectionStringProvider connectionStringProvider)
+        {
+            _connectionStringProvider = connectionStringProvider;
+        }
+
+        public async Task<CameraDto> GetCameraSummaryAsync(string siteId, CancellationToken ct)
+        {
+            var connectionString = _connectionStringProvider.GetConnectionString();
+
+            const string sql = @"
+SELECT
+    COUNT(1) AS TotalCameras,
+    SUM(CASE WHEN IsOnline = 1 THEN 1 ELSE 0 END) AS OnlineCameras
+FROM Cameras
+WHERE SiteId = @SiteId;";
+
+            await using var conn = new SqlConnection(connectionString);
+            await conn.OpenAsync(ct);
+
+            // You will need to adjust column names (TotalCameras/OnlineCameras) to match your DTO mapping.
+            return await conn.QuerySingleAsync<CameraDto>(new CommandDefinition(
+                sql,
+                new { SiteId = siteId },
+                cancellationToken: ct
+            ));
+        }
+    }
+}
+```
+
+Important:
+- Replace `Cameras`, `SiteId`, `IsOnline` with your actual table/column names.
+
+
+7. API controller: DI + response wrapper + validation
+-------------------------------------------------------
+Update `IconnectDashboardGateway.API/Controllers/CameraController.cs`
+
+Your existing controller is MVC-style (`Controller` + `Index()`). Replace with Web API style.
+
+Example:
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using IconnectDashboardGateway.Application.Interfaces;
+using IconnectDashboardGateway.Contracts.Dtos;
+
+namespace IconnectDashboardGateway.API.Controllers
+{
+    [ApiController]
+    [Route("api/v1/sites/{siteId}/cameras")]
+    public class CameraController : ControllerBase
+    {
+        private readonly ICameraService _cameraService;
+        private readonly ILogger<CameraController> _logger;
+
+        public CameraController(ICameraService cameraService, ILogger<CameraController> logger)
+        {
+            _cameraService = cameraService;
+            _logger = logger;
+        }
+
+        [HttpGet("summary")]
+        public async Task<ActionResult<JsonResponseModel<CameraDto>>> GetCameraSummary(
+            [FromRoute] string siteId,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(siteId))
+                return BadRequest(JsonResponseModel<CameraDto>.Error("siteId is required."));
+
+            try
+            {
+                var dto = await _cameraService.GetCameraSummaryAsync(siteId, ct);
+                return Ok(JsonResponseModel<CameraDto>.Success(dto));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Camera summary failed for siteId={SiteId}", siteId);
+
+                // Optional: you can also call your custom registry+file logger here
+                // (see section 8).
+
+                return StatusCode(500, JsonResponseModel<CameraDto>.Error("Internal server error."));
+            }
+        }
+    }
+}
+```
+
+DI usage in the controller:
+- controller constructor takes `ICameraService` (interface)
+- controller never touches registry or Dapper
+
+
+8. Logger: write to log file + also write to registry
+-------------------------------------------------------
+Because you asked for “logger logs in the parent/root registry, and logs in the log file”, here’s a simple implementation:
+- write every log message to a text file
+- for errors, update a registry key with “LastError” and “LastErrorTime”
+
+Create interface (new) in Application or Contracts:
+`IconnectDashboardGateway.Application/Interfaces/IAppAuditLogger.cs` (new)
+
+```csharp
+namespace IconnectDashboardGateway.Application.Interfaces
+{
+    public interface IAppAuditLogger
+    {
+        void Info(string message);
+        void Error(string message, Exception? ex = null);
+    }
+}
+```
+
+Implement in Infrastructure:
+`IconnectDashboardGateway.Infrastructure/Logging/RegistryFileAuditLogger.cs` (new)
+
+```csharp
+using System.Text;
+using Microsoft.Win32;
+using IconnectDashboardGateway.Application.Interfaces;
+
+namespace IconnectDashboardGateway.Infrastructure.Logging
+{
+    public class RegistryFileAuditLogger : IAppAuditLogger
+    {
+        // Update these paths/keys to match your environment:
+        private const string RegistryPath = @"SOFTWARE\iConnect\SiteGateway\Logs";
+        private const string LastErrorValueName = "LastError";
+        private const string LastErrorTimeValueName = "LastErrorTime";
+
+        private readonly string _logFilePath;
+
+        public RegistryFileAuditLogger()
+        {
+            // Example log file. In production, consider making this configurable.
+            _logFilePath = Path.Combine(
+                AppContext.BaseDirectory,
+                "logs",
+                "sitegateway.log"
+            );
+        }
+
+        public void Info(string message)
+        {
+            AppendLine($"INFO {DateTimeOffset.Now:O} {message}");
+        }
+
+        public void Error(string message, Exception? ex = null)
+        {
+            var full = ex == null ? message : $"{message} | Exception: {ex}";
+            AppendLine($"ERROR {DateTimeOffset.Now:O} {full}");
+
+            // Store last error in registry (simple + avoids big registry writes)
+            try
+            {
+                using var key = Registry.LocalMachine.CreateSubKey(RegistryPath);
+                if (key != null)
+                {
+                    key.SetValue(LastErrorValueName, full, RegistryValueKind.String);
+                    key.SetValue(LastErrorTimeValueName, DateTimeOffset.Now.ToString("O"), RegistryValueKind.String);
+                }
+            }
+            catch
+            {
+                // Never fail the API because registry writes failed.
+            }
+        }
+
+        private void AppendLine(string line)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_logFilePath)!);
+            File.AppendAllText(_logFilePath, line + Environment.NewLine, Encoding.UTF8);
+        }
+    }
+}
+```
+
+How to use logger in controller/service:
+- Inject `IAppAuditLogger` where you want audit logging.
+
+Example injection in `CameraService`:
+
+```csharp
+using IconnectDashboardGateway.Application.Interfaces;
+
+// add to constructor:
+// private readonly IAppAuditLogger _auditLogger;
+// and use:
+// _auditLogger.Info($"Fetching camera summary for siteId={siteId}");
+// _auditLogger.Error("Camera summary failed", ex);
+```
+
+
+9. Dependency Injection wiring (the most important part)
+------------------------------------------------------------
+Right now your projects have no references. You must add:
+
+`IconnectDashboardGateway.API.csproj`
+- `ProjectReference` to:
+  - `IconnectDashboardGateway.Application`
+  - `IconnectDashboardGateway.Contracts`
+
+`IconnectDashboardGateway.Infrastructure.csproj`
+- `ProjectReference` to:
+  - `IconnectDashboardGateway.Application`
+  - `IconnectDashboardGateway.Contracts`
+- packages:
+  - `Dapper`
+  - `Microsoft.Data.SqlClient`
+
+Now create `IconnectDashboardGateway.Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs`:
+
+```csharp
+using IconnectDashboardGateway.Application.Interfaces;
+using IconnectDashboardGateway.Application.Interfaces.Repositories;
+using IconnectDashboardGateway.Application.Services;
+using IconnectDashboardGateway.Infrastructure.Connection;
+using IconnectDashboardGateway.Infrastructure.DataAccess;
+using IconnectDashboardGateway.Infrastructure.Logging;
+
+namespace IconnectDashboardGateway.Infrastructure.DependencyInjection
+{
+    public static class ServiceCollectionExtensions
+    {
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+        {
+            services.AddSingleton<IRegistryConnectionStringProvider, RegistryConnectionStringProvider>();
+
+            services.AddScoped<ICameraRepository, CameraRepository>();
+
+            // Your custom audit logger
+            services.AddSingleton<IAppAuditLogger, RegistryFileAuditLogger>();
+
+            return services;
+        }
+    }
+}
+```
+
+Update Application registration:
+Create `IconnectDashboardGateway.Application/DependencyInjection/ServiceCollectionExtensions.cs` (optional),
+or register services directly in API `Program.cs`.
+
+Simpler for now (register service in API Program.cs):
+
+Update `IconnectDashboardGateway.API/Program.cs`:
+
+```csharp
+using IconnectDashboardGateway.Application.Interfaces;
+using IconnectDashboardGateway.Application.Services;
+using IconnectDashboardGateway.Infrastructure.DependencyInjection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+builder.Services.AddOpenApi();
+
+// Application services
+builder.Services.AddScoped<ICameraService, CameraService>();
+
+// Infrastructure services
+builder.Services.AddInfrastructure();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+```
+
+
+10. How the request moves through the layers (summary)
+---------------------------------------------------------
+1. Client calls `GET /api/v1/sites/{siteId}/cameras/summary`
+2. `CameraController` receives `siteId`, validates, returns `JsonResponseModel`
+3. Controller calls `ICameraService.GetCameraSummaryAsync(siteId, ct)`
+4. `CameraService` calls `ICameraRepository.GetCameraSummaryAsync(siteId, ct)`
+5. `CameraRepository` asks `IRegistryConnectionStringProvider` for the decrypted connection string (K/D)
+6. Repository opens `SqlConnection`, runs Dapper query, maps rows to `CameraDto`
+7. Controller wraps DTO into `JsonResponseModel<CameraDto>`
+
+
+11. What I need from you to finalize the SQL
+----------------------------------------------
+To make the repository query exact, send me:
+1. The table name that holds camera rows (for each site)
+2. The column names for:
+   - SiteId (or equivalent)
+   - Online status (e.g., `IsOnline` or `Status`)
+3. If the summary is pre-computed in another table, tell me the table to query instead.
+
