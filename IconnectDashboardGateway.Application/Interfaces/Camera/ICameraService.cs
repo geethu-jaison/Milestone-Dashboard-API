@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using IconnectDashboardGateway.Contracts.Dtos.Camera;
 using IconnectDashboardGateway.Contracts.Dtos.Common;
 
-namespace IconnectDashboardGateway.Application.Interfaces.Repositories
+namespace IconnectDashboardGateway.Application.Interfaces.Camera
 {
-    public interface ICameraRepository
+    public interface ICameraService
     {
         Task<JsonResponseModel<CameraDto>> GetCameraSummary(string siteId, CancellationToken cancellationToken = default);
     }

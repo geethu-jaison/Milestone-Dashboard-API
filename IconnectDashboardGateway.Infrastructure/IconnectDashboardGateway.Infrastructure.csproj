@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\IconnectDashboardGateway.Application\IconnectDashboardGateway.Application.csproj" />
     <ProjectReference Include="..\IconnectDashboardGateway.Contracts\IconnectDashboardGateway.Contracts.csproj" />
   </ItemGroup>

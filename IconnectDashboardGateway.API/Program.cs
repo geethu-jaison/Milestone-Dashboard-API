@@ -1,5 +1,10 @@
+using IconnectDashboardGateway.Application.Interfaces.Camera;
 using IconnectDashboardGateway.Application.Interfaces.Connection;
+using IconnectDashboardGateway.Application.Interfaces.Logger;
+using IconnectDashboardGateway.Application.Interfaces.Repositories;
+using IconnectDashboardGateway.Application.Services;
 using IconnectDashboardGateway.Infrastructure.Connection;
+using IconnectDashboardGateway.Infrastructure.DataAccess;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +18,9 @@ builder.Services.AddOpenApi();
 
 // Connection string from registry (singleton cache)
 builder.Services.AddSingleton<IRegistryConnectionStringProvider, RegistryConnectionStringProvider>();
+builder.Services.AddScoped<IAppLogger, AppLogger>();// App logger service for logging
+builder.Services.AddScoped<ICameraService, CameraService>();//camera service
+builder.Services.AddScoped<ICameraRepository, CameraRepository>();//camera repository for db access
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

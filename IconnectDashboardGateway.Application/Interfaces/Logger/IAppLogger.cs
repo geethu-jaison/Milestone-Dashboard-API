@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using IconnectDashboardGateway.Application.Enums;
 
-namespace IconnectDashboardGateway.Application.Interfaces
+namespace IconnectDashboardGateway.Application.Interfaces.Logger
 {
     /// Application-level file logger for errors and exceptions
     public interface IAppLogger

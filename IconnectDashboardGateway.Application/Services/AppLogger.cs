@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using IconnectDashboardGateway.Application.Enums;
-using IconnectDashboardGateway.Application.Interfaces;
+using IconnectDashboardGateway.Application.Interfaces.Logger;
 
 namespace IconnectDashboardGateway.Application.Services
 {
