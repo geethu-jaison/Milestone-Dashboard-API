@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.13.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IconnectDashboardGateway.Application\IconnectDashboardGateway.Application.csproj" />
+    <ProjectReference Include="..\IconnectDashboardGateway.Infrastructure\IconnectDashboardGateway.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

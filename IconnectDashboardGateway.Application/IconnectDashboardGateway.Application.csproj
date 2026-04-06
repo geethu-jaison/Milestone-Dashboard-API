@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IconnectDashboardGateway.Contracts\IconnectDashboardGateway.Contracts.csproj" />
+  </ItemGroup>
+
 </Project>
