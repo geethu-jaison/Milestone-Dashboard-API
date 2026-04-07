@@ -1,6 +1,7 @@
 ﻿using IconnectDashboardGateway.Application.Interfaces.Camera;
 using IconnectDashboardGateway.Contracts.Dtos.Camera;
 using IconnectDashboardGateway.Contracts.Dtos.Common;
+using IconnectDashboardGateway.Contracts.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IconnectDashboardGateway.API.Controllers
@@ -27,6 +28,19 @@ namespace IconnectDashboardGateway.API.Controllers
                 return Ok(response);
             else
                 return Ok(response);
+        }
+        [HttpGet("list")]
+        public async Task<ActionResult<JsonResponseModel<CameraListResponseDto>>> GetCameras(string siteId,[FromQuery] CameraListFilter filter = CameraListFilter.All,CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(siteId))
+                return BadRequest("site id is required");
+
+            var response = await _cameraService.GetCamerasAsync(siteId, filter, cancellationToken);
+
+            if (response.Status == "Success")
+                return Ok(response);
+
+            return BadRequest(response);
         }
     }
 }

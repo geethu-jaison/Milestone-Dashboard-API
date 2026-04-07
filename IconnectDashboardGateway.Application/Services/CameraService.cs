@@ -8,6 +8,7 @@ using IconnectDashboardGateway.Application.Interfaces.Logger;
 using IconnectDashboardGateway.Application.Interfaces.Repositories;
 using IconnectDashboardGateway.Contracts.Dtos.Camera;
 using IconnectDashboardGateway.Contracts.Dtos.Common;
+using IconnectDashboardGateway.Contracts.Enums;
 
 namespace IconnectDashboardGateway.Application.Services
 {
@@ -35,10 +36,20 @@ namespace IconnectDashboardGateway.Application.Services
             catch (Exception ex)
             {
                 _appLogger.LogError($"Camera summary failed for siteId={siteId}, error={ex.Message}", ex);
-                return JsonResponseModel<CameraDto>.Fail($"Unable to load camera summary. {ex.Message}");
+                return JsonResponseModel<CameraDto>.Fail($"Unable to load camera summary.");
             }
         }
-
-
+        public async Task<JsonResponseModel<CameraListResponseDto>> GetCamerasAsync(string siteId,CameraListFilter filter,CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _cameraRepository.GetCamerasAsync(siteId, filter, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _appLogger.LogError($"Camera list failed for siteId={siteId}, error={ex.Message}", ex);
+                return JsonResponseModel<CameraListResponseDto>.Fail("Unable to load camera list.");
+            }
+        }
     }
 }

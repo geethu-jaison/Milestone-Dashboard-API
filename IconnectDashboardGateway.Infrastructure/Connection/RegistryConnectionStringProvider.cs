@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace IconnectDashboardGateway.Infrastructure.Connection
     /// Read-only: same registry path and crypto as SecureRegistryStore for K + D only.
     /// HKCU first, then HKLM. Does not write registry.
     /// </summary>
+    [Obfuscation(Exclude =false, ApplyToMembers = true)]
     public class RegistryConnectionStringProvider:IRegistryConnectionStringProvider
     {
         private const string RegRoot = @"SOFTWARE\7E3F1A9C-B2D4-4E6F-8A0C-5B3D7E9F1A2C";

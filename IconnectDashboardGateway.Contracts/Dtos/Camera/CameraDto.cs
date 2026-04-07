@@ -11,5 +11,7 @@ namespace IconnectDashboardGateway.Contracts.Dtos.Camera
         public int TotalCameras { get; set; }
         public int OnlineCameras { get; set; }
         public int OfflineCameras { get; set; }
+        public int WeakPasswordCameras { get; set; }
+
     }
 }
