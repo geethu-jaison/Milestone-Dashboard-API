@@ -4,6 +4,7 @@ using IconnectDashboardGateway.Application.Interfaces.DataAccess;
 using IconnectDashboardGateway.Application.Interfaces.Logger;
 using IconnectDashboardGateway.Application.Interfaces.Repositories;
 using IconnectDashboardGateway.Application.Interfaces.Server;
+using IconnectDashboardGateway.Application.Interfaces.Site;
 using IconnectDashboardGateway.Application.Services;
 using IconnectDashboardGateway.Infrastructure.Connection;
 using IconnectDashboardGateway.Infrastructure.DataAccess;
@@ -24,7 +25,9 @@ builder.Services.AddScoped<IAppLogger, AppLogger>();// App logger service for lo
 builder.Services.AddScoped<ICameraService, CameraService>();//camera service
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();//camera repository for db access
 builder.Services.AddScoped<IServerRepository, ServerRepository>();//server repository for db access
-builder.Services.AddScoped<IServerService, ServerService>();//server service
+builder.Services.AddScoped<IServerService, ServerService>();// server service
+builder.Services.AddScoped<ISiteService, SiteService>(); // site service
+builder.Services.AddScoped<ISiteRepository, SiteRepository>();// site repository for db access
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
