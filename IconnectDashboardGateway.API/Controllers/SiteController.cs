@@ -12,5 +12,14 @@ namespace IconnectDashboardGateway.API.Controllers
         {
             _siteService = siteService;
         }
+        
+        [HttpGet]
+        public async Task<IActionResult> GetSite(string siteId, CancellationToken cancellationToken)
+        {
+            var response = await _siteService.GetSiteAsync(siteId, cancellationToken);
+            if (response.Status == "Error")
+                return BadRequest(response);
+            return Ok(response);
+        }
     }
 }
