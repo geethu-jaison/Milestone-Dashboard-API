@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IconnectDashboardGateway.Contracts.Dtos.Auth
 {
-    public class SiteAuthResult
+    internal class TokenValidationResultDto
     {
     }
 }

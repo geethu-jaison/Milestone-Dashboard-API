@@ -42,7 +42,7 @@ namespace IconnectDashboardGateway.Infrastructure.DataAccess
                                         SiteData,
                                         DateAddedUtc,
                                         DateModifiedUtc
-                                    FROM dbo.SiteInfo
+                                    FROM dbo.SiteInfo 
                                     WHERE SiteId = @SiteId;";
                 await using var con = new SqlConnection(_ConnectionStringProvider.GetConnectionString());
                 await con.OpenAsync(cancellationToken);
