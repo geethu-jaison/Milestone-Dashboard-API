@@ -11,11 +11,9 @@ namespace IconnectDashboardGateway.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ISiteAuthService _siteAuthService;
-        private readonly ITokenService _tokenService;
-        public AuthController(ISiteAuthService siteAuthService, ITokenService tokenService)
+        public AuthController(ISiteAuthService siteAuthService)
         {
             _siteAuthService = siteAuthService;
-            _tokenService = tokenService;
         }
         [HttpPost("handshake")]
         [AllowAnonymous]

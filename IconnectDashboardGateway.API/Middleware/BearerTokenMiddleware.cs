@@ -13,6 +13,13 @@ namespace IconnectDashboardGateway.API.Middleware
             _appLogger = appLogger;
         }
 
+        /// <summary>
+        /// Middleware entry point:
+        /// - bypasses handshake/docs endpoints
+        /// - enforces Authorization: Bearer <token>
+        /// - validates token via SiteAuthService
+        /// - returns 401 for missing/invalid/expired token
+        /// </summary>
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             try

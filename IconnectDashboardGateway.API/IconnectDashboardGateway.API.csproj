@@ -18,4 +18,8 @@
     <ProjectReference Include="..\IconnectDashboardGateway.Infrastructure\IconnectDashboardGateway.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Middleware\" />
+  </ItemGroup>
+
 </Project>

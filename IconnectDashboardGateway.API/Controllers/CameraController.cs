@@ -15,7 +15,7 @@ namespace IconnectDashboardGateway.API.Controllers
         {
             _cameraService = cameraService;
         }
-
+        #region Camera summary
         [HttpGet("summary")]
         public async Task<ActionResult<JsonResponseModel<CameraDto>>> GetCameraSummary(string siteId,CancellationToken cancellationToken=default)
         {
@@ -29,6 +29,9 @@ namespace IconnectDashboardGateway.API.Controllers
             else
                 return Ok(response);
         }
+        #endregion
+
+        #region CameraList with filters
         [HttpGet("list")]
         public async Task<ActionResult<JsonResponseModel<CameraListResponseDto>>> GetCameras(string siteId,[FromQuery] CameraListFilter filter = CameraListFilter.All,CancellationToken cancellationToken = default)
         {
@@ -42,6 +45,7 @@ namespace IconnectDashboardGateway.API.Controllers
 
             return BadRequest(response);
         }
+        #endregion
     }
 }
   

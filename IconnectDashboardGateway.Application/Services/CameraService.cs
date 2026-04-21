@@ -22,6 +22,7 @@ namespace IconnectDashboardGateway.Application.Services
             _cameraRepository = cameraRepository;
         }
 
+        #region camera summary
         public async Task<JsonResponseModel<CameraDto>> GetCameraSummary(string siteId, CancellationToken cancellation = default)
         {
             try
@@ -39,7 +40,10 @@ namespace IconnectDashboardGateway.Application.Services
                 return JsonResponseModel<CameraDto>.Fail($"Unable to load camera summary.");
             }
         }
-        public async Task<JsonResponseModel<CameraListResponseDto>> GetCamerasAsync(string siteId,CameraListFilter filter,CancellationToken cancellationToken = default)
+        #endregion
+
+        #region camera list with filter
+        public async Task<JsonResponseModel<CameraListResponseDto>> GetCamerasAsync(string siteId, CameraListFilter filter, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -51,5 +55,6 @@ namespace IconnectDashboardGateway.Application.Services
                 return JsonResponseModel<CameraListResponseDto>.Fail("Unable to load camera list.");
             }
         }
+        #endregion
     }
 }

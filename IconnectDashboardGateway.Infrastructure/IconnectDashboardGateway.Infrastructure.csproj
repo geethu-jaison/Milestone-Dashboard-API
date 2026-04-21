@@ -16,4 +16,8 @@
     <ProjectReference Include="..\IconnectDashboardGateway.Contracts\IconnectDashboardGateway.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Auth\scripts\" />
+  </ItemGroup>
+
 </Project>

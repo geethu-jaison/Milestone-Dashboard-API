@@ -20,27 +20,33 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
     [Obfuscation(Exclude = false, ApplyToMembers = true)]
     public class SiteAuthService : ISiteAuthService
     {
-        private readonly IRegistryConnectionStringProvider _connectionStringProvider;
-        private readonly IAppLogger _appLogger;
+        
+        private readonly IRegistryConnectionStringProvider _connectionStringProvider; // Provides DB connection string from secured registry-backed provider.
+
+        private readonly IAppLogger _appLogger;  // Logger for logging 
 
         private const string FallbackSecret = "Rdt#21.04.26";
-        // in memory token store 
-        private static readonly ConcurrentDictionary<string, TokenEntry> _tokens=new();
+    
+        private static readonly ConcurrentDictionary<string, TokenEntry> _tokens=new();   // In-memory token cache keyed by token hash; value stores site scope and expiry.
 
 
-        private const int TokenTtlMinutes = 30;
-        private const int MaxClockSkewSeconds = 300;
+        private const int TokenTtlMinutes = 30; // Access token lifetime in minutes.
+        private const int MaxClockSkewSeconds = 300; // Allowed clock skew (seconds) between caller timestamp and server UTC.
 
-        private const string RegRoot = @"SOFTWARE\7E3F1A9C-B2D4-4E6F-8A0C-5B3D7E9F1A2C";
-        private const string ValueKey = "K";
-        private const byte XorKey = 0x5A;
-        private const string Salt = "MonkeyOn1A#Car";
+        private const string RegRoot = @"SOFTWARE\7E3F1A9C-B2D4-4E6F-8A0C-5B3D7E9F1A2C"; // Registry root where encrypted key material is stored.
+        private const string ValueKey = "K"; // Registry value name holding obfuscated key payload.
+        private const byte XorKey = 0x5A; // XOR mask used in key de-obfuscation
+        private const string Salt = "MonkeyOn1A#Car"; // Salt used in key obfuscation
         public SiteAuthService(IAppLogger appLogger, IRegistryConnectionStringProvider registryConnectionStringProvider)
         {
             _appLogger = appLogger;
             _connectionStringProvider = registryConnectionStringProvider;
         }
 
+        /// <summary>
+        /// Validates encrypted handshake payload, checks timestamp/site, issues token, and returns token response.
+        /// Expected decrypted payload format: siteId|secret|timestampUnix.
+        /// </summary>
         public async Task<JsonResponseModel<ParentHandshakeResponseDto>> ValidateHandshakeAndIssueTokenAsync(string payload, CancellationToken cancellationToken = default)
         {
             try
@@ -91,6 +97,7 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
             }
         }
 
+        /// Validates bearer token by hash lookup and expiry check in in-memory store.
         public Task<bool> ValidateTokenAsync(string token, CancellationToken ct = default)
         {
             try
@@ -111,6 +118,8 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
                 return Task.FromResult(false);
             }
         }
+
+        // Validates siteId and secret by checking if the site exists in the database.
         private async Task<bool> ValidateSiteSecretAsync(string siteId, string secret, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(siteId))
@@ -130,6 +139,8 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
 
             return exists == 1;
         }
+
+        // Generates a URL-safe random token string (32 random bytes, Base64Url style).
         private static string GenerateToken()
         {
             Span<byte> bytes = stackalloc byte[32];
@@ -139,11 +150,15 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
                 .Replace("/", "_")
                 .TrimEnd('=');
         }
+
+        // Hashes token using SHA-256 for safe in-memory storage/comparison.
         private static string HashToken(string token)
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
             return Convert.ToBase64String(bytes);
         }
+
+        // Removes expired tokens from in-memory cache.
         private static void CleanupExpiredTokens()
         {
             var now = DateTime.UtcNow;
@@ -153,7 +168,8 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
                     _tokens.TryRemove(kv.Key, out _);
             }
         }
-        // ---- Registry key extraction (same pattern as your provider) ----
+        
+        // Reads obfuscated key string from registry (HKCU first, then HKLM) and removes salt wrapper.
         private static string? GetObfuscatedKey()
         {
             try
@@ -180,6 +196,8 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
                 return null;
             }
         }
+
+        // Builds real AES key bytes from obfuscated registry key using XOR de-obfuscation.
         private static byte[]? GetRealKey()
         {
             var obf = GetObfuscatedKey();
@@ -189,6 +207,8 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
                 bytes[i] ^= XorKey;
             return bytes;
         }
+
+        // Removes salt protection from stored key string and returns the inner key payload.
         private static string RemoveSaltFromKey(string saltedKey, string salt)
         {
             var saltedBytes = Convert.FromBase64String(saltedKey);
@@ -201,6 +221,8 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
             var idx = combined.IndexOf('|');
             return idx >= 0 ? combined[..idx] : combined;
         }
+
+        // Decrypts payload formatted as [16-byte IV + ciphertext] using AES-256-CBC/PKCS7.
         private static string? DecryptAes(byte[] encrypted, byte[] key)
         {
             if (encrypted.Length < 17) return null;
@@ -219,7 +241,7 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
             return Encoding.UTF8.GetString(plain);
         }
 
-
+        // In-memory token metadata used for scope and expiration validation.
         private sealed class TokenEntry
         {
             public string SiteId { get; set; } = string.Empty;
