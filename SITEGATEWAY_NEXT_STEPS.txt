@@ -1,0 +1,234 @@
+Site Gateway API (.NET 9) - Next Steps
+=====================================
+
+This document focuses on the concrete “what to create next” so the service follows your clean layered approach:
+API controllers only in `Api` layer, orchestration/use-cases + interfaces in `Application`, and Dapper/data access + registry decrypt in `Infrastructure`, with DTOs/models in `Contracts`.
+
+Repository (what you already have)
+---------------------------------
+You already have the solution and stub projects:
+- `IconnectDashboardGateway.API`
+- `IconnectDashboardGateway.Application`
+- `IconnectDashboardGateway.Contracts`
+- `IconnectDashboardGateway.Infrastructure`
+- `IconnectDashboardGateway.Tests`
+
+Step order (do this in sequence)
+---------------------------------
+1. Create the folder structure inside each project (see “Folder structure” section below).
+2. Update project references (so each project can “see” the layer it should).
+   - `Api` references `Application` + `Contracts`
+   - `Infrastructure` references `Application` + `Contracts`
+3. Add NuGet packages (Dapper + SQL + any auth/middleware packages you choose).
+4. Define DTOs and shared request/response models in `Contracts`.
+5. Define Application interfaces + use-cases (read-only endpoints first) in `Application`.
+   - API controllers should depend only on Application interfaces/use-cases.
+6. Implement Infrastructure:
+   - registry decrypt + connection provider (K/D logic)
+   - Dapper repositories that implement Application interfaces
+7. Wire dependency injection:
+   - `Application` has “abstractions” only; `Infrastructure` has concrete implementations
+   - `Infrastructure` should expose an `AddInfrastructure(...)` extension method for DI
+   - `Api` should call both `AddApplication(...)` and `AddInfrastructure(...)`
+8. Implement API controllers for v1 routes (`/api/v1/...`), mapping HTTP <-> use-case calls.
+9. Add Windows Service hosting (in `Api` Program.cs).
+10. Add the first endpoint end-to-end (Health summary) before continuing to other summaries.
+
+
+Folder structure (create these folders)
+----------------------------------------
+
+1) API project: `IconnectDashboardGateway.API`
+   Suggested tree:
+   - `Controllers/`
+     - `V1/`
+       - `HealthController.cs`
+       - `SiteInfoController.cs`
+       - `CameraSummaryController.cs`
+       - `StorageSummaryController.cs`
+       - `AlertSummaryController.cs`
+       - `LicenseSummaryController.cs`
+   - `Middleware/`
+     - `ApiKeyAuthenticationMiddleware.cs`   (or authorization handler/filter, your choice)
+   - `Extensions/`
+     - `ServiceCollectionExtensions.cs`      (register API-specific services + middleware)
+   - (optional) `Filters/` for request validation, auth failure handling, etc.
+
+2) Application project: `IconnectDashboardGateway.Application`
+   Suggested tree:
+   - `Abstractions/`
+     - `IRegistryConnectionStringProvider.cs`
+     - `IDbConnectionFactory.cs`             (optional, if you want a single “get connection” abstraction)
+     - `IClock.cs`                           (optional, for testable time)
+   - `Interfaces/Repositories/`
+     - `IHealthSummaryRepository.cs`
+     - `ISiteInfoRepository.cs`
+     - `ICameraSummaryRepository.cs`
+     - `IStorageSummaryRepository.cs`
+     - `IAlertSummaryRepository.cs`
+     - `ILicenseSummaryRepository.cs`
+   - `UseCases/`
+     - `Health/GetHealthSummaryUseCase.cs`
+     - `SiteInfo/GetSiteInfoUseCase.cs`
+     - `Camera/GetCameraSummaryUseCase.cs`
+     - `Storage/GetStorageSummaryUseCase.cs`
+     - `Alert/GetAlertSummaryUseCase.cs`
+     - `License/GetLicenseSummaryUseCase.cs`
+   - `Contracts/` (optional if you want internal request objects separate from DTOs)
+     - `Requests/` and `Responses/`
+
+   Clean rule: controllers should call use-cases only; use-cases call repositories via interfaces; repositories are implemented in Infrastructure.
+
+3) Contracts project: `IconnectDashboardGateway.Contracts`
+   Suggested tree:
+   - `Dtos/`
+     - `HealthSummaryDto.cs`
+     - `SiteInfoDto.cs`
+     - `CameraSummaryDto.cs`
+     - `StorageSummaryDto.cs`
+     - `AlertSummaryDto.cs`
+     - `LicenseSummaryDto.cs`
+   - (optional) `Common/`
+     - `ApiErrorDto.cs`
+     - `PagedResultDto.cs`
+   - (optional) `Enums/`
+     - `LicenseStatus.cs`
+
+   Clean rule: DTOs are shape-only. No Dapper types, no SqlConnection, no registry decrypt.
+
+4) Infrastructure project: `IconnectDashboardGateway.Infrastructure`
+   Suggested tree:
+   - `DependencyInjection/`
+     - `ServiceCollectionExtensions.cs`   (AddInfrastructure)
+   - `Connection/`
+     - `RegistryConnectionStringProvider.cs`  (reads `K` + `D`, decrypts, produces connection string)
+     - `PluginDecryptor.cs`                  (your K/D decrypt logic, shared helper)
+   - `Persistence/`
+     - `Repositories/`
+       - `HealthSummaryRepository.cs`
+       - `SiteInfoRepository.cs`
+       - `CameraSummaryRepository.cs`
+       - `StorageSummaryRepository.cs`
+       - `AlertSummaryRepository.cs`
+       - `LicenseSummaryRepository.cs`
+     - `Sql/`
+       - `HealthSummaryQueries.sql` (optional) or inline SQL in repositories
+     - `Mapping/`
+       - `HealthSummaryMapper.cs` (optional)
+   - `Security/`
+     - (optional) if you implement auth helpers here; otherwise keep auth in API layer.
+
+
+Package + csproj updates (exact intention)
+------------------------------------------
+1) `IconnectDashboardGateway.API.csproj`
+   - Keep `Microsoft.AspNetCore.OpenApi` / Scalar packages as you use them
+   - Add references:
+     - `ProjectReference` to:
+       - `IconnectDashboardGateway.Application`
+       - `IconnectDashboardGateway.Contracts`
+
+2) `IconnectDashboardGateway.Application.csproj`
+   - No Dapper/SqlClient here (interfaces + orchestration only)
+   - It may reference nothing or only standard libraries.
+
+3) `IconnectDashboardGateway.Infrastructure.csproj`
+   - Add references:
+     - `ProjectReference` to `IconnectDashboardGateway.Application`
+     - `ProjectReference` to `IconnectDashboardGateway.Contracts`
+   - Add packages:
+     - `Dapper`
+     - `Microsoft.Data.SqlClient`
+
+4) `IconnectDashboardGateway.Contracts.csproj`
+   - DTO-only. Typically no extra packages needed.
+
+
+Dependency injection wiring (how “each layer talks”)
+------------------------------------------------------
+1) Application layer:
+   - Define interfaces for repositories/providers (Application owns interfaces).
+   - Define use-cases that take those interfaces in constructors.
+
+2) Infrastructure layer:
+   - Implement repository/provider interfaces.
+   - Provide an extension method:
+     - `AddInfrastructure(IServiceCollection services)`:
+       - registers decrypted connection string provider
+       - registers db connection factory (if you have one)
+       - registers repositories as implementations of Application interfaces
+
+3) API layer:
+   - In `Program.cs`, call:
+     - `services.AddControllers()`
+     - `services.AddApplication()` (optional, if you create it)
+     - `services.AddInfrastructure(...)`
+   - Controllers should only:
+     - validate input (route params/body)
+     - call use-cases
+     - return DTOs
+
+
+Auth + security baseline (placeholders for now)
+------------------------------------------------
+Implement authentication early because it affects controllers’ behavior:
+- API key authentication (header like `X-API-Key`), per-site credentials if required.
+- Strict request validation for query parameters / route ids.
+- Never log decrypted connection strings or registry secrets.
+
+Recommended location:
+- API layer middleware handles API key checks and rejects unauthorized requests.
+- After auth passes, controllers call use-cases, which never handle secrets directly.
+
+
+Initial endpoints (start read-only)
+-----------------------------------
+All endpoints should be under a consistent versioned route prefix:
+- `/api/v1/...`
+
+Suggested v1 route patterns:
+- `/api/v1/sites/{siteId}/info`
+- `/api/v1/sites/{siteId}/health/summary`
+- `/api/v1/sites/{siteId}/cameras/summary`
+- `/api/v1/sites/{siteId}/storage/summary`
+- `/api/v1/sites/{siteId}/alerts/summary`
+- `/api/v1/sites/{siteId}/license/summary`
+
+Order to implement (to reduce risk):
+1. Health summary (first end-to-end: controller -> use-case -> repository -> Dapper query)
+2. Site info
+3. Camera summary
+4. Storage summary
+5. Alert summary
+6. License summary
+
+
+Windows Service hosting (API project)
+--------------------------------------
+Update `IconnectDashboardGateway.API/Program.cs` later, after DI is wired:
+- add `builder.Host.UseWindowsService();`
+- ensure logs work (don’t depend solely on console)
+
+After this doc, your next “real” code task should be:
+- wire the first repository + first endpoint (Health summary)
+- then update Program.cs for Windows service hosting
+
+
+First “end-to-end” skeleton checklist (Health summary)
+---------------------------------------------------------
+Create these files first:
+1) Contracts:
+   - `Dtos/HealthSummaryDto.cs`
+2) Application:
+   - `Interfaces/Repositories/IHealthSummaryRepository.cs`
+   - `UseCases/Health/GetHealthSummaryUseCase.cs`
+3) Infrastructure:
+   - `Persistence/Repositories/HealthSummaryRepository.cs`
+   - `Connection/RegistryConnectionStringProvider.cs` (or a minimal provider)
+   - (DI wiring) `DependencyInjection/ServiceCollectionExtensions.cs`
+4) API:
+   - `Controllers/V1/HealthController.cs`
+
+And only after Health summary works:
+- repeat the same structure for Camera/Storage/Alert/License/SiteInfo.
+

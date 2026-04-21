@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IconnectDashboardGateway.API", "IconnectDashboardGateway.API\IconnectDashboardGateway.API.csproj", "{DA4DC97D-B8F1-4440-B237-0FA9129D76F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IconnectDashboardGateway.Application", "IconnectDashboardGateway.Application\IconnectDashboardGateway.Application.csproj", "{3C4E5AD9-5B60-41C8-965E-258A5D4A3884}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IconnectDashboardGateway.Contracts", "IconnectDashboardGateway.Contracts\IconnectDashboardGateway.Contracts.csproj", "{D315F7AE-458F-4A84-9091-5B91F9D94996}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IconnectDashboardGateway.Infrastructure", "IconnectDashboardGateway.Infrastructure\IconnectDashboardGateway.Infrastructure.csproj", "{EE300EB8-03F9-4AD8-B283-E3C89A154D1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IconnectDashboardGateway.Tests", "IconnectDashboardGateway.Tests\IconnectDashboardGateway.Tests.csproj", "{A12A428F-3B92-4B3D-B080-B3C1ECF65165}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DA4DC97D-B8F1-4440-B237-0FA9129D76F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA4DC97D-B8F1-4440-B237-0FA9129D76F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA4DC97D-B8F1-4440-B237-0FA9129D76F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA4DC97D-B8F1-4440-B237-0FA9129D76F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C4E5AD9-5B60-41C8-965E-258A5D4A3884}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C4E5AD9-5B60-41C8-965E-258A5D4A3884}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C4E5AD9-5B60-41C8-965E-258A5D4A3884}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C4E5AD9-5B60-41C8-965E-258A5D4A3884}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D315F7AE-458F-4A84-9091-5B91F9D94996}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D315F7AE-458F-4A84-9091-5B91F9D94996}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D315F7AE-458F-4A84-9091-5B91F9D94996}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D315F7AE-458F-4A84-9091-5B91F9D94996}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE300EB8-03F9-4AD8-B283-E3C89A154D1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE300EB8-03F9-4AD8-B283-E3C89A154D1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE300EB8-03F9-4AD8-B283-E3C89A154D1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE300EB8-03F9-4AD8-B283-E3C89A154D1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A12A428F-3B92-4B3D-B080-B3C1ECF65165}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A12A428F-3B92-4B3D-B080-B3C1ECF65165}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A12A428F-3B92-4B3D-B080-B3C1ECF65165}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A12A428F-3B92-4B3D-B080-B3C1ECF65165}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

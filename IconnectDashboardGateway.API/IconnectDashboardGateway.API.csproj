@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.72" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.13.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IconnectDashboardGateway.Application\IconnectDashboardGateway.Application.csproj" />
+    <ProjectReference Include="..\IconnectDashboardGateway.Infrastructure\IconnectDashboardGateway.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
