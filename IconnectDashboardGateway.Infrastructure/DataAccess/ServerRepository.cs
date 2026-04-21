@@ -37,7 +37,7 @@ namespace IconnectDashboardGateway.Infrastructure.DataAccess
                 await con.OpenAsync(cancellationToken);
 
                 const string existsSql = @"
-                                            IF EXISTS (SELECT 1 FROM dbo.CameraCache WHERE SiteId = @SiteId)
+                                            IF EXISTS (SELECT 1 FROM dbo.SiteInfo WHERE SiteId = @SiteId)
                                                        SELECT 1;
                                                               ELSE
                                                        SELECT 0;

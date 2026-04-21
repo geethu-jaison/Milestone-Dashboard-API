@@ -33,7 +33,7 @@ namespace IconnectDashboardGateway.Infrastructure.DataAccess
                 if (string.IsNullOrWhiteSpace(siteId))
                     return JsonResponseModel<CameraDto>.Fail("siteId is required.");
                 const string sql = @"
-                                DECLARE @Ok BIT = CASE WHEN EXISTS (SELECT 1 FROM dbo.CameraCache WHERE SiteId = @SiteId) THEN 1 ELSE 0 END;
+                                DECLARE @Ok BIT = CASE WHEN EXISTS (SELECT 1 FROM dbo.SiteInfo WHERE SiteId = @SiteId) THEN 1 ELSE 0 END;
                                 IF @Ok = 0
                                       SELECT
                                              CAST(0 AS INT) AS TotalCameras,
@@ -87,7 +87,7 @@ namespace IconnectDashboardGateway.Infrastructure.DataAccess
                 await connection.OpenAsync(cancellationToken);
 
                 const string existsSql = @"
-                                            IF EXISTS (SELECT 1 FROM dbo.CameraCache WHERE SiteId = @SiteId)
+                                            IF EXISTS (SELECT 1 FROM dbo.SiteInfo WHERE SiteId = @SiteId)
                                                 SELECT 1;
                                             ELSE
                                                 SELECT 0;";
