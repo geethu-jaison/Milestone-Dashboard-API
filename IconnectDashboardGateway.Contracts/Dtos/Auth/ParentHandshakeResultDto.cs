@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace IconnectDashboardGateway.Contracts.Dtos.Auth
 {
-    public class ParentHandshakeResponseDto
+    public class ParentHandshakeResultDto
     {
-        public string AccessToken { get; set; } = string.Empty;
-        public DateTime ExpiresUtc { get; set; }
+        public string payload { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,4 @@
+﻿2026-04-21T13:47:16.9466519+05:30 | ERROR | Error validating handshake and issuing token
+System.NullReferenceException: Object reference not set to an instance of an object.
+   at IconnectDashboardGateway.Infrastructure.Auth.SiteAuthService.ValidateHandshakeAndIssueTokenAsync(String payload, CancellationToken cancellationToken) in C:\Rawdata Git\Milestone-Dashboard-API\IconnectDashboardGateway.Infrastructure\Auth\SiteAuthService.cs:line 74
+

@@ -31,7 +31,7 @@ builder.Services.AddScoped<IServerRepository, ServerRepository>();//server repos
 builder.Services.AddScoped<IServerService, ServerService>();// server service
 builder.Services.AddScoped<ISiteService, SiteService>(); // site service
 builder.Services.AddScoped<ISiteRepository, SiteRepository>();// site repository for db access
-
+builder.Services.AddScoped<BearerTokenMiddleware>();// Auth middleware to validate bearer tokens on incoming requests
 // auth and token related services DI's
 builder.Services.AddScoped<ISiteAuthService,SiteAuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
