@@ -25,7 +25,7 @@ namespace IconnectDashboardGateway.Infrastructure.Auth
 
         private const string FallbackSecret = "Rdt#21.04.26";
         // in memory token store 
-        private static readonly ConcurrentDictionary<string, TokenEntry> _tokens;
+        private static readonly ConcurrentDictionary<string, TokenEntry> _tokens=new();
 
 
         private const int TokenTtlMinutes = 30;
